@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filer</title>
+    <!-- inspired by 5iler.com. Killing my mac app effort from 2018? world doesnt need platform centeric anything-->
+    <style>
+        :root {
+            --color-0: #ff5f56;
+            --color-1: #ffbd2e;
+            --color-2: #27c93f;
+            --color-3: #007aff;
+            --color-4: #af52de;
+            --bg: #111;
+            --transition: 0.25s ease-out;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: #999;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        .pane {
+            position: relative;
+            display: flex;
+            flex-direction: row;
+            transition: flex var(--transition);
+            overflow: hidden;
+            background: #111;
+            flex: 0.2;
+        }
+
+        .pane.active {
+            flex: 10;
+            flex-direction: column;
+            background: #181818;
+        }
+
+        .pane-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            background: #111;
+            transition: color 0.2s;
+            border-right: 1px solid #222;
+        }
+
+        .pane:not(.active) .pane-label {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            height: 100%;
+            width: 40px;
+        }
+
+        .pane.active .pane-label {
+            writing-mode: horizontal-tb;
+            transform: none;
+            width: 100%;
+            height: 40px;
+            justify-content: flex-start;
+            padding-left: 20px;
+            border-right: none;
+            border-bottom: 1px solid #222;
+            color: var(--active-color);
+        }
+
+        .content-area {
+            flex: 1;
+            width: 100%;
+            display: none;
+        }
+
+        .pane.active .content-area {
+            display: flex;
+        }
+
+        textarea {
+            flex: 1;
+            width: 100%;
+            padding: 40px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #ddd;
+            font-family: "SF Mono", "Menlo", monospace;
+            font-size: 15px;
+            line-height: 1.8;
+            resize: none;
+        }
+
+        .p-0 {
+            --active-color: var(--color-0);
+            border-top: 3px solid var(--color-0);
+        }
+
+        .p-1 {
+            --active-color: var(--color-1);
+            border-top: 3px solid var(--color-1);
+        }
+
+        .p-2 {
+            --active-color: var(--color-2);
+            border-top: 3px solid var(--color-2);
+        }
+
+        .p-3 {
+            --active-color: var(--color-3);
+            border-top: 3px solid var(--color-3);
+        }
+
+        .p-4 {
+            --active-color: var(--color-4);
+            border-top: 3px solid var(--color-4);
+        }
+
+        .pane-label::after {
+            content: attr(data-key);
+            display: block;
+            margin-top: 10px;
+            font-size: 9px;
+            opacity: 0.3;
+        }
+
+        .pane.active .pane-label::after {
+            margin-top: 0;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="app-container">
+        <section class="pane p-0" onclick="setActive(0)">
+            <div class="pane-label" data-key="[CTRL+1]">Scratch</div>
+            <div class="content-area"><textarea id="t0" spellcheck="false" placeholder="Scratch..."></textarea></div>
+        </section>
+        <section class="pane p-1" onclick="setActive(1)">
+            <div class="pane-label" data-key="[CTRL+2]">Notes</div>
+            <div class="content-area"><textarea id="t1" spellcheck="false" placeholder="Notes..."></textarea></div>
+        </section>
+        <section class="pane p-2" onclick="setActive(2)">
+            <div class="pane-label" data-key="[CTRL+3]">Tasks</div>
+            <div class="content-area"><textarea id="t2" spellcheck="false" placeholder="Tasks..."></textarea></div>
+        </section>
+    </main>
+
+    <script>
+        const panes = document.querySelectorAll('.pane');
+        const textareas = document.querySelectorAll('textarea');
+
+        function setActive(index) {
+            if (index < 0 || index >= panes.length) return;
+            panes.forEach(p => p.classList.remove('active'));
+            panes[index].classList.add('active');
+            localStorage.setItem('filer_active_tab', index);
+            textareas[index].focus();
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key >= '1' && e.key <= '5') {
+                e.preventDefault(); 
+                setActive(parseInt(e.key) - 1);
+            }
+        });
+
+        window.onload = () => {
+            textareas.forEach((area, i) => {
+                area.value = localStorage.getItem(`5iler_v4_txt_${i}`) || "";
+                area.addEventListener('input', (e) => {
+                    localStorage.setItem(`filer_tab_content_${i}`, e.target.value);
+                });
+
+                area.addEventListener('keydown', (e) => {
+                    if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const s = area.selectionStart;
+                        area.value = area.value.substring(0, s) + "\t" + area.value.substring(area.selectionEnd);
+                        area.selectionEnd = s + 1;
+                    }
+                });
+            });
+
+            const savedIndex = localStorage.getItem('filer_active_tab') || 0;
+            setActive(parseInt(savedIndex));
+        };
+    </script>
+</body>
+
+</html>
