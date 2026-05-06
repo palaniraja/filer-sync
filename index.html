@@ -5,222 +5,337 @@
     <meta charset="UTF-8">
     <link rel="icon" href="data:;base64,=">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filer</title>
+    <title>Filer - Offline friendly scratchpad</title>
     <!-- Inspired by 5iler.com. Killing my mac app effort from 2018? world doesnt need platform centeric anything-->
     <style>
         :root {
-    /* --- Accent Colors --- */
-    --color-0: #ff5f56;
-    --color-1: #27c93f;
-    --color-2: #ffbd2e;
-    --color-3: #007aff;
-    --color-4: #af52de;
-    
-    /* --- Timing --- */
-    --t-layout: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --t-color: 0.2s ease-out;
+            /* --- Accent Colors --- */
+            --color-0: #ff5f56;
+            --color-1: #27c93f;
+            --color-2: #ffbd2e;
+            --color-3: #007aff;
+            --color-4: #af52de;
 
-    /* --- Default Theme (Dark) --- */
-    --bg: #111;
-    --pane-bg: #111;
-    --active-bg: #181818;
-    --text: #ddd;
-    --label-text: #999;
-    --border: #222;
-    --ui-hover: #333;
-}
+            /* --- Timing --- */
+            --t-layout: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --t-color: 0.2s ease-out;
 
-@media (prefers-color-scheme: light) {
-    :root {
-        --bg: #e5e5e7;
-        --pane-bg: #f5f5f7;
-        --active-bg: #ffffff;
-        --text: #1d1d1f;
-        --label-text: #86868b;
-        --border: #d2d2d7;
-        --ui-hover: #e1e1e1;
-    }
-}
+            /* --- Default Theme (Dark) --- */
+            --bg: #111;
+            --pane-bg: #111;
+            --active-bg: #181818;
+            --text: #ddd;
+            --label-text: #999;
+            --border: #222;
+            --ui-hover: #333;
+        }
 
-body.force-dark {
-    --bg: #111; --pane-bg: #111; --active-bg: #181818; --text: #ddd; --label-text: #999; --border: #222;
-}
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #e5e5e7;
+                --pane-bg: #f5f5f7;
+                --active-bg: #ffffff;
+                --text: #1d1d1f;
+                --label-text: #86868b;
+                --border: #d2d2d7;
+                --ui-hover: #e1e1e1;
+            }
+        }
 
-body.force-light {
-    --bg: #e5e5e7; --pane-bg: #f5f5f7; --active-bg: #ffffff; --text: #1d1d1f; --label-text: #86868b; --border: #d2d2d7;
-}
+        body.force-dark {
+            --bg: #111;
+            --pane-bg: #111;
+            --active-bg: #181818;
+            --text: #ddd;
+            --label-text: #999;
+            --border: #222;
+        }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+        body.force-light {
+            --bg: #e5e5e7;
+            --pane-bg: #f5f5f7;
+            --active-bg: #ffffff;
+            --text: #1d1d1f;
+            --label-text: #86868b;
+            --border: #d2d2d7;
+        }
 
-body {
-    background-color: var(--bg);
-    color: var(--label-text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    height: 100vh;
-    overflow: hidden;
-    /* Transition colors only to avoid layout jitter */
-    transition: background-color var(--t-color);
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-.app-container { display: flex; height: 100%; width: 100%; }
+        body {
+            background-color: var(--bg);
+            color: var(--label-text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            /* Transition colors only to avoid layout jitter */
+            transition: background-color var(--t-color);
+        }
 
-.pane {
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    /* Separate layout and color transitions */
-    transition: flex var(--t-layout), background-color var(--t-color);
-    overflow: hidden;
-    background: var(--pane-bg);
-    flex: 0.2;
-}
+        .app-container {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
 
-.pane.active {
-    flex: 10;
-    flex-direction: column;
-    background: var(--active-bg);
-}
+        .pane {
+            position: relative;
+            display: flex;
+            flex-direction: row;
+            /* Separate layout and color transitions */
+            transition: flex var(--t-layout), background-color var(--t-color);
+            overflow: hidden;
+            background: var(--pane-bg);
+            flex: 0.2;
+        }
 
-.pane-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px;
-    font-family: monospace;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    cursor: pointer;
-    background: var(--pane-bg);
-    border-right: 1px solid var(--border);
-    color: var(--label-text);
-    /* Prevent label jumping */
-    transition: color var(--t-color), background-color var(--t-color), border var(--t-color), width var(--t-layout);
-    z-index: 10;
-}
+        .pane.active {
+            flex: 10;
+            flex-direction: column;
+            background: var(--active-bg);
+        }
 
-.pane:not(.active) .pane-label {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    height: 100%;
-    width: 40px;
-}
+        .pane-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            background: var(--pane-bg);
+            border-right: 1px solid var(--border);
+            color: var(--label-text);
+            /* Prevent label jumping */
+            transition: color var(--t-color), background-color var(--t-color), border var(--t-color), width var(--t-layout);
+            z-index: 10;
+        }
 
-.pane.active .pane-label {
-    writing-mode: horizontal-tb;
-    transform: none;
-    width: 100%;
-    height: 40px;
-    justify-content: flex-start;
-    padding-left: 20px;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-    color: var(--active-color);
-}
+        .pane:not(.active) .pane-label {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            height: 100%;
+            width: 40px;
+        }
 
-.pane-label::after {
-    /* Pulls the '1', '2', etc. from the HTML data-key attribute */
-    content: "" attr(data-key); 
-    display: block;
-    margin-top: 12px;
-    font-size: 8px;
-    font-weight: bold;
-    /* Use the text variable but slightly faded */
-    color: var(--text);
-    opacity: 0.5; 
-    letter-spacing: 1px;
-    transition: opacity var(--t-color);
-}
+        .pane.active .pane-label {
+            writing-mode: horizontal-tb;
+            transform: none;
+            width: 100%;
+            height: 40px;
+            justify-content: flex-start;
+            padding-left: 20px;
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+            color: var(--active-color);
+        }
 
-.pane.active .pane-label::after {
-    margin-top: 0;
-    margin-left: 15px;
-    opacity: 0.8; /* Make it more visible when the pane is active */
-}
+        .pane-label::after {
+            /* Pulls the '1', '2', etc. from the HTML data-key attribute */
+            content: "" attr(data-key);
+            display: block;
+            margin-top: 12px;
+            font-size: 8px;
+            font-weight: bold;
+            /* Use the text variable but slightly faded */
+            color: var(--text);
+            opacity: 0.5;
+            letter-spacing: 1px;
+            transition: opacity var(--t-color);
+        }
 
-.content-area { flex: 1; width: 100%; display: none; }
-.pane.active .content-area { display: flex; }
+        .pane.active .pane-label::after {
+            margin-top: 0;
+            margin-left: 15px;
+            opacity: 0.8;
+            /* Make it more visible when the pane is active */
+        }
 
-textarea {
-    flex: 1;
-    width: 100%;
-    padding: 40px;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: "SF Mono", "Menlo", monospace;
-    font-size: 15px;
-    line-height: 1.8;
-    resize: none;
-    transition: color var(--t-color);
-}
+        .content-area {
+            flex: 1;
+            width: 100%;
+            display: none;
+        }
 
-/* Accents */
-.p-0 { --active-color: var(--color-0); border-top: 3px solid var(--color-0); }
-.p-1 { --active-color: var(--color-1); border-top: 3px solid var(--color-1); }
-.p-2 { --active-color: var(--color-2); border-top: 3px solid var(--color-2); }
-.p-3 { --active-color: var(--color-3); border-top: 3px solid var(--color-3); }
-.p-4 { --active-color: var(--color-4); border-top: 3px solid var(--color-4); }
+        .pane.active .content-area {
+            display: flex;
+        }
 
-.theme-toggle {
-    position: fixed; bottom: 20px; left: 20px; z-index: 100;
-    background: var(--border); border: none; padding: 8px 14px;
-    border-radius: 6px; cursor: pointer; font-size: 9px;
-    text-transform: uppercase; color: var(--text);
-}
+        textarea {
+            flex: 1;
+            width: 100%;
+            padding: 40px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-family: "SF Mono", "Menlo", monospace;
+            font-size: 15px;
+            line-height: 1.8;
+            resize: none;
+            transition: color var(--t-color);
+        }
 
-/* 1. Positioning the sibling Nav */
-.mobile-nav {
-    display: none;
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 40px; /* Matches the pane-label height */
-    align-items: center;
-    z-index: 20;
-    padding-right: 10px;
-}
+        /* Accents */
+        .p-0 {
+            --active-color: var(--color-0);
+            border-top: 3px solid var(--color-0);
+        }
 
-/* 2. Only show when the parent pane is active */
-.pane.active .mobile-nav {
-    display: flex;
-}
+        .p-1 {
+            --active-color: var(--color-1);
+            border-top: 3px solid var(--color-1);
+        }
 
-/* 3. The Buttons */
-.mobile-nav span {
-    padding: 0 15px;
-    font-size: 24px;
-    color: var(--active-color);
-    cursor: pointer;
-    user-select: none;
-    /* Ensure they are easy to hit on mobile */
-    line-height: 40px; 
-}
+        .p-2 {
+            --active-color: var(--color-2);
+            border-top: 3px solid var(--color-2);
+        }
 
-/* 4. Fix the Label to make room for buttons */
-.pane.active .pane-label {
-    width: 100%;
-    height: 40px;
-    padding-right: 80px; /* Buffer so text doesn't hit the buttons */
-    justify-content: flex-start;
-}
+        .p-3 {
+            --active-color: var(--color-3);
+            border-top: 3px solid var(--color-3);
+        }
 
-/* 5. Keep the data-key (::after) visible */
-.pane-label::after {
-    content: attr(data-key);
-    margin-left: 10px;
-    font-size: 9px;
-    opacity: 0.5;
-}
+        .p-4 {
+            --active-color: var(--color-4);
+            border-top: 3px solid var(--color-4);
+        }
 
-/* Hide data-key on very small screens if it gets crowded */
-@media (max-width: 350px) {
-    .pane.active .pane-label::after {
-        display: none;
-    }
-}
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            background: var(--border);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 9px;
+            text-transform: uppercase;
+            color: var(--text);
+        }
 
+        /* 1. Positioning the sibling Nav */
+        .mobile-nav {
+            display: none;
+            position: absolute;
+            top: 0;
+            right: 0;
+            height: 40px;
+            /* Matches the pane-label height */
+            align-items: center;
+            z-index: 20;
+            padding-right: 10px;
+        }
+
+        /* 2. Only show when the parent pane is active */
+        .pane.active .mobile-nav {
+            display: flex;
+        }
+
+        /* 3. The Buttons */
+        .mobile-nav span {
+            padding: 0 15px;
+            font-size: 24px;
+            color: var(--active-color);
+            cursor: pointer;
+            user-select: none;
+            /* Ensure they are easy to hit on mobile */
+            line-height: 40px;
+        }
+
+        /* 4. Fix the Label to make room for buttons */
+        .pane.active .pane-label {
+            width: 100%;
+            height: 40px;
+            padding-right: 80px;
+            /* Buffer so text doesn't hit the buttons */
+            justify-content: flex-start;
+        }
+
+        /* 5. Keep the data-key (::after) visible */
+        .pane-label::after {
+            content: attr(data-key);
+            margin-left: 10px;
+            font-size: 9px;
+            opacity: 0.5;
+        }
+
+        /* Hide data-key on very small screens if it gets crowded */
+        @media (max-width: 350px) {
+            .pane.active .pane-label::after {
+                display: none;
+            }
+        }
+
+        #pb-config-dialog {
+            border: none;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
+
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #pb-config-dialog::backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+
+        .sync-tray {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            pointer-events: none;
+        }
+
+        .sync-tray-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: monospace;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--label-text);
+            opacity: 0.7;
+        }
+
+        .sync-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #8e8e93;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+            flex: 0 0 auto;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .actions button {
+            padding: .2em;
+            margin-top: 1.25em;
+        }
     </style>
 </head>
 
@@ -253,7 +368,25 @@ textarea {
             </div>
             <div class="content-area"><textarea id="t2" spellcheck="false" placeholder="Tasks..."></textarea></div>
         </section>
+        <dialog id="pb-config-dialog">
+            <form method="dialog" id="pb-config-form">
+                <h3>Data Takeout</h3>
+
+                <input type="file" id="pb-import-file" accept="application/json" style="display:none">
+
+                <div class="actions">
+                    <button type="button" id="pb-export-btn">Export Data</button>
+                    <button type="button" id="pb-import-btn">Import Data</button>
+                    <button type="button" onclick="closeDialog();">Close</button>
+                </div>
+            </form>
+        </dialog>
+
     </main>
+
+    <div class="sync-tray" aria-label="Sync status">
+        <span class="sync-indicator is-offline" id="sync-indicator"></span>
+    </div>
 
     <script>
         const panes = document.querySelectorAll('.pane');
@@ -268,7 +401,7 @@ textarea {
         }
 
         function moveActive(direction) {
-                const allPanes = document.querySelectorAll('.pane');
+            const allPanes = document.querySelectorAll('.pane');
             let currentIndex = Array.from(allPanes).findIndex(p => p.classList.contains('active'));
 
             let newIndex = currentIndex + direction;
@@ -281,14 +414,14 @@ textarea {
 
         window.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key >= '1' && e.key <= '5') {
-                e.preventDefault(); 
+                e.preventDefault();
                 setActive(parseInt(e.key) - 1);
             }
         });
 
         window.onload = () => {
             textareas.forEach((area, i) => {
-                area.value = localStorage.getItem(`5iler_v4_txt_${i}`) || "";
+                area.value = localStorage.getItem(`filer_tab_content_${i}`) || "";
                 area.addEventListener('input', (e) => {
                     localStorage.setItem(`filer_tab_content_${i}`, e.target.value);
                 });
@@ -305,8 +438,119 @@ textarea {
 
             const savedIndex = localStorage.getItem('filer_active_tab') || 0;
             setActive(parseInt(savedIndex));
+
+
+            document.getElementById('sync-indicator').addEventListener('click', () => {
+                document.getElementById('pb-config-dialog').showModal();
+            });
+
+            document.getElementById('pb-export-btn').addEventListener('click', () => {
+                exportLocalData();
+            });
+
+            document.getElementById('pb-import-btn').addEventListener('click', () => {
+                importFileInput = document.getElementById('pb-import-file')
+                importFileInput.value = '';
+                importFileInput.click();
+            });
+
+            document.getElementById('pb-import-file').addEventListener('change', async (event) => {
+                const [file] = event.target.files || [];
+                if (!file) {
+                    return;
+                }
+
+                try {
+                    const raw = await file.text();
+                    const parsed = JSON.parse(raw);
+                    applyImportedData(parsed);
+                } catch (error) {
+                    alert(`Import failed: ${error.message}`);
+                }
+            });
+
+
         };
+
+        // install service worker to cache assets for offline use
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch((error) => {
+                    console.warn('Service worker registration failed:', error);
+                });
+            });
+        }
+
+        function exportLocalData() {
+            const dump = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('filer_') || key === 'pb_sync_config') {
+                    dump[key] = localStorage.getItem(key);
+                }
+            }
+
+            const fileContent = JSON.stringify({
+                version: "1.0",
+                exportedAt: new Date().toISOString(),
+                data: dump
+            }, null, 2);
+
+            const blob = new Blob([fileContent], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `filer-backup-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function applyImportedData(data) {
+            const importedData = data?.data || data;
+
+            if (!importedData || typeof importedData !== 'object') {
+                alert('Error: Invalid backup file format.');
+                return;
+            }
+
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.startsWith('filer_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+
+            Object.entries(importedData).forEach(([key, value]) => {
+                if (key.startsWith('filer_') || key === 'pb_sync_config') {
+                    localStorage.setItem(key, value);
+                }
+            });
+
+            const textareas = document.querySelectorAll('textarea');
+            textareas.forEach((area, index) => {
+                const content = localStorage.getItem(`filer_tab_content_${index}`);
+                area.value = content || '';
+                area.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+
+            const activeTabIndex = parseInt(localStorage.getItem('filer_active_tab'), 10);
+            if (!isNaN(activeTabIndex) && typeof window.setActive === 'function') {
+                window.setActive(activeTabIndex);
+            }
+
+            closeDialog();
+
+            alert('Import successful! Data has been restored.');
+        }
+
+        function closeDialog() {
+            const dialog = document.getElementById('pb-config-dialog');
+            if (dialog) dialog.close();
+        }
     </script>
+
 </body>
 
 </html>
