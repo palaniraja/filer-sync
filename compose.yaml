@@ -1,0 +1,29 @@
+services:
+  pocketbase:
+    image: alpine:latest
+    container_name: pocketbase
+    ports:
+      - "9080:8080"
+    volumes:
+      - pb_data:/pb/pb_data
+    environment:
+      - PB_VERSION=0.37.5
+      - PB_ARCH=arm64
+      - PB_ORIGINS=https://github.com,https://palaniraja.github.io,http://localhost:8083,http://localhost:9080
+    command: >
+      sh -c "
+        apk add --no-cache unzip ca-certificates &&
+        wget -q https://github.com/pocketbase/pocketbase/releases/download/v$${PB_VERSION}/pocketbase_$${PB_VERSION}_linux_$${PB_ARCH}.zip -O /tmp/pb.zip &&
+        unzip -o /tmp/pb.zip -d /pb/ &&
+        rm /tmp/pb.zip &&
+        /pb/pocketbase serve --http=0.0.0.0:8080 --origins=$${PB_ORIGINS}
+      "
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://0.0.0.0:8080/api/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+volumes:
+  pb_data:
+    external: true

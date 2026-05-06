@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <link rel="icon" href="data:;base64,=">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:;base64,=">
     <title>Filer - Offline friendly scratchpad</title>
     <!-- Inspired by 5iler.com. Killing my mac app effort from 2018? world doesnt need platform centeric anything-->
     <style>
@@ -252,51 +253,6 @@
             line-height: 40px;
         }
 
-        /* 4. Fix the Label to make room for buttons */
-        .pane.active .pane-label {
-            width: 100%;
-            height: 40px;
-            padding-right: 80px;
-            /* Buffer so text doesn't hit the buttons */
-            justify-content: flex-start;
-        }
-
-        /* 5. Keep the data-key (::after) visible */
-        .pane-label::after {
-            content: attr(data-key);
-            margin-left: 10px;
-            font-size: 9px;
-            opacity: 0.5;
-        }
-
-        /* Hide data-key on very small screens if it gets crowded */
-        @media (max-width: 350px) {
-            .pane.active .pane-label::after {
-                display: none;
-            }
-        }
-
-        #pb-config-dialog {
-            border: none;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            margin: 0;
-
-            width: 90%;
-            max-width: 400px;
-        }
-
-        #pb-config-dialog::backdrop {
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-
         .sync-tray {
             position: fixed;
             bottom: 20px;
@@ -332,9 +288,90 @@
             cursor: pointer;
         }
 
-        .actions button {
-            padding: .2em;
-            margin-top: 1.25em;
+        .sync-indicator.is-synced {
+            background: #30d158;
+        }
+
+        .sync-indicator.is-offline {
+            background: #8e8e93;
+        }
+
+        .sync-indicator.is-syncing {
+            background: #ffbd2e;
+        }
+
+        .sync-indicator.is-conflict {
+            background: #ff453a;
+        }
+
+        /* 4. Fix the Label to make room for buttons */
+        .pane.active .pane-label {
+            width: 100%;
+            height: 40px;
+            padding-right: 80px;
+            /* Buffer so text doesn't hit the buttons */
+            justify-content: flex-start;
+        }
+
+        /* 5. Keep the data-key (::after) visible */
+        .pane-label::after {
+            content: attr(data-key);
+            margin-left: 10px;
+            font-size: 9px;
+            opacity: 0.5;
+        }
+
+        /* Hide data-key on very small screens if it gets crowded */
+        @media (max-width: 350px) {
+            .pane.active .pane-label::after {
+                display: none;
+            }
+        }
+
+
+        #pb-config-dialog {
+            border: none;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
+
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #pb-config-dialog::backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        #pb-config-dialog label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        #pb-config-dialog input {
+            display: block;
+            width: 100%;
+            margin-top: 5px;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        button {
+            padding: 2px;
         }
     </style>
 </head>
@@ -347,6 +384,7 @@
             <div class="mobile-nav">
                 <span onclick="event.stopPropagation(); moveActive(-1)">‹</span>
                 <span onclick="event.stopPropagation(); moveActive(1)">›</span>
+                <!-- <button onclick="document.getElementById('pb-config-dialog').showModal()">⚙️</button> -->
             </div>
             <div class="content-area"><textarea id="t0" spellcheck="false" placeholder="Scratch..."></textarea></div>
         </section>
@@ -370,33 +408,44 @@
         </section>
         <dialog id="pb-config-dialog">
             <form method="dialog" id="pb-config-form">
-                <h3>Data Takeout</h3>
+                <h3>Sync Configuration</h3>
 
+                <label>URL: <input type="url" id="pb-url" placeholder="https://pb.example.com" required></label>
+                <label>App ID: <input type="text" id="pb-app-id" placeholder="personal-notes" required></label>
+                <label>Email: <input type="email" id="pb-user" placeholder="user@example.com" required></label>
+                <label>Password: <input type="password" id="pb-pass" required></label>
                 <input type="file" id="pb-import-file" accept="application/json" style="display:none">
 
                 <div class="actions">
                     <button type="button" id="pb-export-btn">Export Data</button>
                     <button type="button" id="pb-import-btn">Import Data</button>
-                    <button type="button" onclick="closeDialog();">Close</button>
+                    <button type="button" onclick="document.getElementById('pb-config-dialog').close()">Cancel</button>
+                    <button type="submit" value="save">Save & Auth</button>
                 </div>
             </form>
         </dialog>
-
     </main>
 
     <div class="sync-tray" aria-label="Sync status">
         <span class="sync-indicator is-offline" id="sync-indicator"></span>
     </div>
 
+    <script src="sync.js"></script>
     <script>
         const panes = document.querySelectorAll('.pane');
         const textareas = document.querySelectorAll('textarea');
+        const ACTIVE_TAB_KEY = 'filer_active_tab';
+        const TAB_CONTENT_KEY_PREFIX = 'filer_tab_content_';
+
+        function getTabContentKey(index) {
+            return `${TAB_CONTENT_KEY_PREFIX}${index}`;
+        }
 
         function setActive(index) {
             if (index < 0 || index >= panes.length) return;
             panes.forEach(p => p.classList.remove('active'));
             panes[index].classList.add('active');
-            localStorage.setItem('filer_active_tab', index);
+            localStorage.setItem(ACTIVE_TAB_KEY, index);
             textareas[index].focus();
         }
 
@@ -421,9 +470,9 @@
 
         window.onload = () => {
             textareas.forEach((area, i) => {
-                area.value = localStorage.getItem(`filer_tab_content_${i}`) || "";
+                area.value = localStorage.getItem(getTabContentKey(i)) || "";
                 area.addEventListener('input', (e) => {
-                    localStorage.setItem(`filer_tab_content_${i}`, e.target.value);
+                    localStorage.setItem(getTabContentKey(i), e.target.value);
                 });
 
                 area.addEventListener('keydown', (e) => {
@@ -436,43 +485,12 @@
                 });
             });
 
-            const savedIndex = localStorage.getItem('filer_active_tab') || 0;
+            const savedIndex = localStorage.getItem(ACTIVE_TAB_KEY) || 0;
             setActive(parseInt(savedIndex));
 
-
-            document.getElementById('sync-indicator').addEventListener('click', () => {
-                document.getElementById('pb-config-dialog').showModal();
-            });
-
-            document.getElementById('pb-export-btn').addEventListener('click', () => {
-                exportLocalData();
-            });
-
-            document.getElementById('pb-import-btn').addEventListener('click', () => {
-                importFileInput = document.getElementById('pb-import-file')
-                importFileInput.value = '';
-                importFileInput.click();
-            });
-
-            document.getElementById('pb-import-file').addEventListener('change', async (event) => {
-                const [file] = event.target.files || [];
-                if (!file) {
-                    return;
-                }
-
-                try {
-                    const raw = await file.text();
-                    const parsed = JSON.parse(raw);
-                    applyImportedData(parsed);
-                } catch (error) {
-                    alert(`Import failed: ${error.message}`);
-                }
-            });
-
-
+            setupSettings();
         };
 
-        // install service worker to cache assets for offline use
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').catch((error) => {
@@ -480,77 +498,7 @@
                 });
             });
         }
-
-        function exportLocalData() {
-            const dump = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.startsWith('filer_') || key === 'pb_sync_config') {
-                    dump[key] = localStorage.getItem(key);
-                }
-            }
-
-            const fileContent = JSON.stringify({
-                version: "1.0",
-                exportedAt: new Date().toISOString(),
-                data: dump
-            }, null, 2);
-
-            const blob = new Blob([fileContent], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `filer-backup-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-
-        function applyImportedData(data) {
-            const importedData = data?.data || data;
-
-            if (!importedData || typeof importedData !== 'object') {
-                alert('Error: Invalid backup file format.');
-                return;
-            }
-
-            const keys = Object.keys(localStorage);
-            keys.forEach(key => {
-                if (key.startsWith('filer_')) {
-                    localStorage.removeItem(key);
-                }
-            });
-
-            Object.entries(importedData).forEach(([key, value]) => {
-                if (key.startsWith('filer_') || key === 'pb_sync_config') {
-                    localStorage.setItem(key, value);
-                }
-            });
-
-            const textareas = document.querySelectorAll('textarea');
-            textareas.forEach((area, index) => {
-                const content = localStorage.getItem(`filer_tab_content_${index}`);
-                area.value = content || '';
-                area.dispatchEvent(new Event('input', { bubbles: true }));
-            });
-
-            const activeTabIndex = parseInt(localStorage.getItem('filer_active_tab'), 10);
-            if (!isNaN(activeTabIndex) && typeof window.setActive === 'function') {
-                window.setActive(activeTabIndex);
-            }
-
-            closeDialog();
-
-            alert('Import successful! Data has been restored.');
-        }
-
-        function closeDialog() {
-            const dialog = document.getElementById('pb-config-dialog');
-            if (dialog) dialog.close();
-        }
     </script>
-
 </body>
 
 </html>

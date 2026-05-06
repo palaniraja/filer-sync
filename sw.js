@@ -1,7 +1,8 @@
-const CACHE_NAME = 'filer-mvp-shell-v1';
+const CACHE_NAME = 'filer-mvp-shell-v2';
 const ROOT_URL = self.registration.scope;
-const INDEX_URL = new URL('index.html', ROOT_URL).toString();
-const APP_SHELL = [ROOT_URL, INDEX_URL];
+const INDEX_URL = new URL('index.html', self.registration.scope).toString();
+const SYNC_URL = new URL('sync.js', self.registration.scope).toString();
+const APP_SHELL = [ROOT_URL, INDEX_URL, SYNC_URL];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
